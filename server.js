@@ -31,7 +31,7 @@ client.on('err', err => console.error(err));
 // ----------------------------*
 let handleErrors = (err, response) => {
   console.error(err); // Might as well be a DB save ...
-  if(response) response.status(500).stnd('Internal Server Error Encountered');
+  if(response) response.status(500).send('Internal Server Error Encountered');
 };
 
 // ----------------------------*
@@ -47,11 +47,11 @@ function Location(query, data){
 //Static function
 // All API calls will be either a static function or attached as a prototype
 Location.fetchLocation = (query) => {
-  const url = `https://maps.googeapis.com/maps/api/geocode/json?address=${data}&key=${process.env.GEOCODE_API_KEY}`;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
 
   return superagent.get(url)
     .then(result => {
-      if(!result.body.results.lenght) throw 'No data';
+      if(!result.body.results.length) throw 'No data';
       let location = new Location(query, result.body.results[0]);
       return location.save()
         .then(result => {
@@ -63,14 +63,14 @@ Location.fetchLocation = (query) => {
 
 Location.lookup = handler => {
   const SQL = `SELECT * FROM locations WHERE search_query=$1;`;
-  const values = [query];
+  const values = [handler.query];
 
   return client.query(SQL, values)
     .then(results => {
       if(results.rowcount > 0) {
         handler.cacheHit(results);
       }else{
-        handler.cacheMiss(results);
+        handler.cacheMiss();
       }
     })
     .catch(console.error);
@@ -78,7 +78,7 @@ Location.lookup = handler => {
 
 //Use prepared statements to prevent SQL insertion!
 Location.prototype.save = function() {
-  let SQL = `INSERT INTO locations (search_query, formatted_query, latitude, longituede)
+  let SQL = `INSERT INTO locations (search_query, formatted_query, latitude, longitude)
   VALUES ($1, $2, $3, $4)
   RETURNING id;`;
 
@@ -102,9 +102,9 @@ let getLocation = (request, response) => {
     query: request.query.data,
     cacheHit: results => {
       console.log('Got data from DB');
-      response.send(results[0]);
+      response.send(results.rows[0]);
     },
-    casheMiss:  () => {
+    cacheMiss:  () => {
       Location.fetchLocation(request.query.data)
         .then(results => response.send(results));
     }
@@ -133,7 +133,7 @@ let getWeather = (request, response) => {
 // ----------------------------*
 // Routes (API)
 // ----------------------------*
-app.get(`/location`, getLocation);
+app.get('/location', getLocation);
 app.get('/weather', getWeather);
 
 // app.get('/weather', (request, response) =>{
