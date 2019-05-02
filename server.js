@@ -31,7 +31,7 @@ client.on('err', err => console.error(err));
 // ----------------------------*
 let handleErrors = (err, response) => {
   console.error(err); // Might as well be a DB save ...
-  if(response) response.status(500).stnd('Internal Server Error Encountered');
+  if(response) response.status(500).send('Internal Server Error Encountered');
 };
 
 // ----------------------------*
