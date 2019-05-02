@@ -96,7 +96,8 @@ function Weather(day){
 // Route Callbacks
 // ----------------------------*
 
-let getLocation = (request, response) => {
+function getLocation(request, response){
+  console.log('working');
 
   const locationHandler = {
     query: request.query.data,
@@ -133,7 +134,11 @@ let getWeather = (request, response) => {
 // ----------------------------*
 // Routes (API)
 // ----------------------------*
-app.get(`/location`, getLocation);
+console.log('hello');
+app.get('*', (req, res) => {
+  res.status(404).send('no page found');
+});
+app.get('/location', getLocation);
 app.get('/weather', getWeather);
 
 // app.get('/weather', (request, response) =>{
