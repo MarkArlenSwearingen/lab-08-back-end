@@ -1,7 +1,7 @@
 {
-  "name": "lab-07-back-end",
+  "name": "lab-08-back-end",
   "version": "1.0.0",
-  "description": "Lab07",
+  "description": "Lab08",
   "main": "server.js",
   "scripts": {
     "test": "jest",
@@ -9,7 +9,7 @@
     "watch": "nodemon",
     "deploy": "git push heroku master",
     "seedDB": "psql -d city_explorer -f ./data.schema.sql",
-  "homepage": "https://github.com/MarkArlenSwearingen/lab-07-back-end#readme"
+    "homepage": "https://github.com/MarkArlenSwearingen/lab-08-back-end#readme"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -19,5 +19,3 @@
     "superagent": "^5.0.5"
   }
 }
-
-
