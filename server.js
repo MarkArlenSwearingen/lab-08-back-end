@@ -7,11 +7,15 @@ require('dotenv').config();
 const express = require('express');
 const cors  = require('cors');
 const superagent =  require('superagent');
+const pg = require('pg');
 
-//Application Setup
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(cors());
+
+//Application Setup - Configure Server
+const client = new pg.Client(process.env.PG_CONNECTION_URL);
+client.connect();
 
 //--------------Handle Errors-------------------//
 let handleError = (err, response) => {
@@ -55,50 +59,52 @@ let searchToLatLong = (request, response) => {
   return superagent.get(geoData)
     .then(result => {
       response.send(new Location(data, result.body.results[0]));
+      console.log(' location returned');
     })
 
     .catch(error => handleError(error, response));
 };
 
+// -------------------------------
+//              Weather
+// ----------------------------
 let getWeather = (request, response) => {
   const data = request.query.data;
   const darkSky = `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${data.latitude},${data.longitude}`;
 
   return superagent.get(darkSky)
-  .then(result => {
-    let weather = result.body.daily.data.map( day => {
-      return new Weather(day);
+    .then(result => {
+      let weather = result.body.daily.data.map( day => {
+        return new Weather(day);
+      });
 
-    });
-    
-    response.send(weather);
-  })
+      response.send(weather);
+    })
 
-  .catch(error => handleError(error, response));
+    .catch(error => handleError(error, response));
 };
 
-  let searchEvents = (request, response) => {
-    const data = request.query.data;
-    const eventBrite = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${data.formatted_query}`;
-  
-    return superagent.get(eventBrite)
+// ---------------------------------
+//              eventBrite
+// ------------------------------             
+let searchEvents = (request, response) => {
+  const data = request.query.data;
+  const eventBrite = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${data.formatted_query}`;
+
+  return superagent.get(eventBrite)
     .then(result => {
       let eventList = result.body.events.map(eventInfo => {
         return new Events(eventInfo);
-  
-      });
-      
+      });  
       response.send(eventList);
     })
-  
     .catch(error => handleError(error, response));
-  };
+};
 
 //-------------------API Routes-------------------///
 app.get('/location', searchToLatLong);
 app.get('/weather', getWeather);
 app.get('/events', searchEvents);
-
 
 
 //Make sure the server is listening for requests
