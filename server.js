@@ -7,11 +7,15 @@ require('dotenv').config();
 const express = require('express');
 const cors  = require('cors');
 const superagent =  require('superagent');
+const pg = require('pg');
 
-//Application Setup
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(cors());
+
+//Application Setup - Configure Server
+const client = new pg.Client(process.env.PG_CONNECTION_URL);
+client.connect();
 
 //--------------Handle Errors-------------------//
 let handleError = (err, response) => {
@@ -55,6 +59,7 @@ let searchToLatLong = (request, response) => {
   return superagent.get(geoData)
     .then(result => {
       response.send(new Location(data, result.body.results[0]));
+      console.log(' location returned');
     })
 
     .catch(error => handleError(error, response));
