@@ -47,11 +47,11 @@ function Location(query, data){
 //Static function
 // All API calls will be either a static function or attached as a prototype
 Location.fetchLocation = (query) => {
-  const url = `https://maps.googeapis.com/maps/api/geocode/json?address=${data}&key=${process.env.GEOCODE_API_KEY}`;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${data}&key=${process.env.GEOCODE_API_KEY}`;
 
   return superagent.get(url)
     .then(result => {
-      if(!result.body.results.lenght) throw 'No data';
+      if(!result.body.results.length) throw 'No data';
       let location = new Location(query, result.body.results[0]);
       return location.save()
         .then(result => {
@@ -63,7 +63,7 @@ Location.fetchLocation = (query) => {
 
 Location.lookup = handler => {
   const SQL = `SELECT * FROM locations WHERE search_query=$1;`;
-  const values = [query];
+  const values = [SQL];// linter query undefined
 
   return client.query(SQL, values)
     .then(results => {
@@ -78,7 +78,7 @@ Location.lookup = handler => {
 
 //Use prepared statements to prevent SQL insertion!
 Location.prototype.save = function() {
-  let SQL = `INSERT INTO locations (search_query, formatted_query, latitude, longituede)
+  let SQL = `INSERT INTO locations (search_query, formatted_query, latitude, longitude)
   VALUES ($1, $2, $3, $4)
   RETURNING id;`;
 
@@ -112,7 +112,7 @@ function getLocation(request, response){
   };
 
   Location.lookup(locationHandler);
-};
+}
 
 let getWeather = (request, response) => {
   const data = request.query.data;
