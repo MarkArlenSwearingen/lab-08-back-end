@@ -8,7 +8,7 @@
     "start": "node server.js",
     "watch": "nodemon",
     "deploy": "git push heroku master",
-    "seedDB": "psql -d ls -f schema.sql",
+    "seedDB": "psql -d city_explorer -f schema.sql",
     "homepage": "https://github.com/MarkArlenSwearingen/lab-08-back-end#readme"
   },
   "dependencies": {
