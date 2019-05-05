@@ -16,6 +16,7 @@ app.use(cors());
 //Application Setup - Configure Server
 const client = new pg.Client(process.env.PG_CONNECTION_URL);
 client.connect();
+client.on('err', err => console.error(err));
 
 //--------------Handle Errors-------------------//
 let handleError = (err, response) => {

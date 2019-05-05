@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS weathers;
 DROP TABLE IF EXISTS locations;
 
 CREATE TABLE locations (
@@ -7,3 +9,24 @@ CREATE TABLE locations (
   latitude NUMERIC(10, 7),
   longitude NUMERIC(10,7)
 );
+
+CREATE TABLE weathers (
+  id SERIAL PRIMARY KEY,
+  forecast VARCHAR(255),
+  time VARCHAR(255),
+  created_at BIGINT,
+  location_id INTEGER NOT NULL,
+  FOREIGN KEY (location_id) REFERENCES locations (id)
+);
+
+CREATE TABLE events(
+  id SERIAL PRIMARY KEY,
+  link TEXT,
+  name VARCHAR(255),
+  event_date VARCHAR(255),
+  summary VARCHAR(255),
+  created_at BIGINT,
+  location_id INTEGER NOT NULL,
+  FOREIGN KEY (location_id) REFERENCES locations (id)
+);
+
