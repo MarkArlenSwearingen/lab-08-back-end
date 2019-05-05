@@ -33,8 +33,34 @@ function Location(query, data){
   this.formatted_query = data.formatted_address;
   this.latitude = data.geometry.location.lat;
   this.longitude = data.geometry.location.lng;
-
 }
+
+//static function doesn't need a new location to be run
+Location.fetchLocation = (query) => {
+  const geoData = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
+
+  return superagent.get(geoData)
+    .then(result => {
+      if(!result.body.lenth ) throw 'No data';
+      // .catch(error => handleError(error, response));
+      let location = new Location(query, result.body.results[0]);
+      return location.save()
+        .then(result => {
+          location.id = result.row[0].id;
+          return location;
+        });
+    });
+};
+
+Location.prototype.save = function(){
+  let SQL = `INSERT INTO locations (search_query, formatted_query, longitude, latitude)
+  VALUES ($1, $2, $3, $4)
+  RETURNING id;`;
+
+  let values = Object.values(this);
+
+  return client.query(SQL, values);
+};
 
 function Weather(day){
   this.forecast = day.summary;
@@ -53,17 +79,14 @@ function Events(location) {
 }
 
 //----------------Callbacks----------------//
-let searchToLatLong = (request, response) => {
-  const data = request.query.data;
-  const geoData = `https://maps.googleapis.com/maps/api/geocode/json?address=${data}&key=${process.env.GEOCODE_API_KEY}`;
-
-  return superagent.get(geoData)
-    .then(result => {
-      response.send(new Location(data, result.body.results[0]));
-      console.log(' location returned');
+let getLocation = (request, response) => {
+  Location.fetchLocation(request.query.data)
+  // const data = request.query.data;
+    .then(location => {
+      response.send(location);
     })
+    .catch(error => console.error(error));
 
-    .catch(error => handleError(error, response));
 };
 
 // -------------------------------
@@ -103,7 +126,7 @@ let searchEvents = (request, response) => {
 };
 
 //-------------------API Routes-------------------///
-app.get('/location', searchToLatLong);
+app.get('/location', getLocation);
 app.get('/weather', getWeather);
 app.get('/events', searchEvents);
 
