@@ -52,6 +52,23 @@ Location.fetchLocation = (query) => {
     });
 };
 
+Location.lookup = handler => {
+  const SQL = `SELECT * FROM locations WHERE search_query= $1;`;
+  const values = [handler.query];
+  //postgres expects and array even for one object
+
+  return client.query(SQL, values)
+    .then(results => {
+      if(results.rowCount > 0) {
+        handler.cacheHit(results);
+      }else{
+        handler.cacheMiss(results);
+        console.log('missed');
+      }
+    });
+
+};
+
 Location.prototype.save = function(){
   let SQL = `INSERT INTO locations (search_query, formatted_query, longitude, latitude)
   VALUES ($1, $2, $3, $4)
@@ -80,13 +97,19 @@ function Events(location) {
 
 //----------------Callbacks----------------//
 let getLocation = (request, response) => {
-  Location.fetchLocation(request.query.data)
-  // const data = request.query.data;
-    .then(location => {
-      response.send(location);
-    })
-    .catch(error => console.error(error));
+  const locationHandler = {
+    query: request.query.data,
+    cacheHit: results => {
+      console.log('got data');
+      response.send(results[0]);
+    },
+    cacheMiss: () => {
+      Location.fetchLocation(request.query.data)
+        .then(results => response.send(results));
+    }
+  };
 
+  Location.lookup(locationHandler);
 };
 
 // -------------------------------
