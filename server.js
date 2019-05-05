@@ -1,167 +1,105 @@
 'use strict';
 
-// Load Environment Vairables from the .env file
+//Load Environment Vairables from the .env file
 require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const superagent =  require('superagent');
-const pg = require('pg');
 
-// ----------------------------*
-// Configure Server
-// ----------------------------*
+//Application Dependencies
+const express = require('express');
+const cors  = require('cors');
+const superagent =  require('superagent');
+
+//Application Setup
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(cors());
 
-// ----------------------------*
-// Database Config
-// ----------------------------*
-// 1. Create a client with connection url
-const client = new pg.Client(process.env.PG_CONNECTION_URL);
+//--------------Handle Errors-------------------//
+let handleError = (err, response) => {
+  console.error(err);
+  if(response) response.status(500).send('Status: 500. So sorry, something went wrong');
 
-//  2.  Connect client
-client.connect();
-
-// 3. Add event listenters
-client.on('err', err => console.error(err));
-
-// ----------------------------*
-// Errors
-// ----------------------------*
-let handleErrors = (err, response) => {
-  console.error(err); // Might as well be a DB save ...
-  if(response) response.status(500).send('Internal Server Error Encountered');
 };
 
-// ----------------------------*
-// Constructor Functions
-// ----------------------------*
+//---------------Constructor Functions----------------------//
+
+//Refactor
 function Location(query, data){
   this.search_query = query;
   this.formatted_query = data.formatted_address;
   this.latitude = data.geometry.location.lat;
   this.longitude = data.geometry.location.lng;
+
 }
-
-//Static function
-// All API calls will be either a static function or attached as a prototype
-Location.fetchLocation = (query) => {
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${data}&key=${process.env.GEOCODE_API_KEY}`;
-
-  return superagent.get(url)
-    .then(result => {
-      if(!result.body.results.length) throw 'No data';
-      let location = new Location(query, result.body.results[0]);
-      return location.save()
-        .then(result => {
-          location.id = result.row[0].id;
-          return location;
-        });
-    });
-};
-
-Location.lookup = handler => {
-  const SQL = `SELECT * FROM locations WHERE search_query=$1;`;
-  const values = [SQL];// linter query undefined
-
-  return client.query(SQL, values)
-    .then(results => {
-      if(results.rowcount > 0) {
-        handler.cacheHit(results);
-      }else{
-        handler.cacheMiss(results);
-      }
-    })
-    .catch(console.error);
-};
-
-//Use prepared statements to prevent SQL insertion!
-Location.prototype.save = function() {
-  let SQL = `INSERT INTO locations (search_query, formatted_query, latitude, longitude)
-  VALUES ($1, $2, $3, $4)
-  RETURNING id;`;
-
-  let values = Object.values(this);
-
-  return client.query(SQL, values);
-};
 
 function Weather(day){
   this.forecast = day.summary;
-  this.time = new Date(day.time *1000).toString().slice(0, 15);
+  this.time = new Date(day.time * 1000).toString().slice(0, 15);
+
 }
 
-// ----------------------------*
-// Route Callbacks
-// ----------------------------*
+function Events(location) {
+  let time = Date.parse(location.start.local);
+  let newDate = new Date(time).toDateString();
 
-function getLocation(request, response){
-  console.log('working');
-
-  const locationHandler = {
-    query: request.query.data,
-    cacheHit: results => {
-      console.log('Got data from DB');
-      response.send(results[0]);
-    },
-    casheMiss:  () => {
-      Location.fetchLocation(request.query.data)
-        .then(results => response.send(results));
-    }
-  };
-
-  Location.lookup(locationHandler);
+  this.event = newDate;
+  this.url = location.url;
+  this.name = location.name.text;
+  this.summary = location.summary;
 }
+
+//----------------Callbacks----------------//
+let searchToLatLong = (request, response) => {
+  const data = request.query.data;
+  const geoData = `https://maps.googleapis.com/maps/api/geocode/json?address=${data}&key=${process.env.GEOCODE_API_KEY}`;
+
+  return superagent.get(geoData)
+    .then(result => {
+      response.send(new Location(data, result.body.results[0]));
+    })
+
+    .catch(error => handleError(error, response));
+};
 
 let getWeather = (request, response) => {
   const data = request.query.data;
-  const url = `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${data.latitude},${data.longitude}`;
+  const darkSky = `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${data.latitude},${data.longitude}`;
 
-  return superagent.get(url)
-    .then(result => {
-      //get forecast - refer to comments in API section below
-      //get time
-      const weatherSummaries = result.body.daily.data.map(day => {
-        return new Weather(day);
-      });
+  return superagent.get(darkSky)
+  .then(result => {
+    let weather = result.body.daily.data.map( day => {
+      return new Weather(day);
 
-      response.send(weatherSummaries);
-    })
-    .catch(error => handleErrors(error, response));
+    });
+    
+    response.send(weather);
+  })
+
+  .catch(error => handleError(error, response));
 };
 
-// ----------------------------*
-// Routes (API)
-// ----------------------------*
-console.log('hello');
-app.get('*', (req, res) => {
-  res.status(404).send('no page found');
-});
-app.get('/location', getLocation);
+  let searchEvents = (request, response) => {
+    const data = request.query.data;
+    const eventBrite = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${data.formatted_query}`;
+  
+    return superagent.get(eventBrite)
+    .then(result => {
+      let eventList = result.body.events.map(eventInfo => {
+        return new Events(eventInfo);
+  
+      });
+      
+      response.send(eventList);
+    })
+  
+    .catch(error => handleError(error, response));
+  };
+
+//-------------------API Routes-------------------///
+app.get('/location', searchToLatLong);
 app.get('/weather', getWeather);
+app.get('/events', searchEvents);
 
-// app.get('/weather', (request, response) =>{
-//   try {
-//     let darksky = require('./data/darksky.json');
-//     let result = [];
 
-//     darksky.daily.data.forEach(object => {
-//       let date = new Date(object.time * 1000).toString().slice(0,15);
-//       let forecast = object.summary;
-//       let info = getWeather(forecast, date);
-//       result.push(info);
-//     });
-//     response.send(result);
-//   } catch(e) {
-//     let message = handleErrors(e);
-//     response.status(message.status).send(message.responseText);
-//   }
-// });
 
-// ----------------------------*
-// PowerOn
-// ----------------------------*
-//Make sure the server is listening for requests - entry point
-//Console.log message is super helpful
+//Make sure the server is listening for requests
 app.listen(PORT, () => console.log(`App is listening on ${PORT}`));
