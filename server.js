@@ -33,8 +33,51 @@ function Location(query, data){
   this.formatted_query = data.formatted_address;
   this.latitude = data.geometry.location.lat;
   this.longitude = data.geometry.location.lng;
-
 }
+
+//static function doesn't need a new location to be run
+Location.fetchLocation = (query) => {
+  const geoData = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
+
+  return superagent.get(geoData)
+    .then(result => {
+      if(!result.body.lenth ) throw 'No data';
+      // .catch(error => handleError(error, response));
+      let location = new Location(query, result.body.results[0]);
+      return location.save()
+        .then(result => {
+          location.id = result.row[0].id;
+          return location;
+        });
+    });
+};
+
+Location.lookup = handler => {
+  const SQL = `SELECT * FROM locations WHERE search_query= $1;`;
+  const values = [handler.query];
+  //postgres expects and array even for one object
+
+  return client.query(SQL, values)
+    .then(results => {
+      if(results.rowCount > 0) {
+        handler.cacheHit(results);
+      }else{
+        handler.cacheMiss(results);
+        console.log('missed');
+      }
+    });
+
+};
+
+Location.prototype.save = function(){
+  let SQL = `INSERT INTO locations (search_query, formatted_query, longitude, latitude)
+  VALUES ($1, $2, $3, $4)
+  RETURNING id;`;
+
+  let values = Object.values(this);
+
+  return client.query(SQL, values);
+};
 
 function Weather(day){
   this.forecast = day.summary;
@@ -53,17 +96,20 @@ function Events(location) {
 }
 
 //----------------Callbacks----------------//
-let searchToLatLong = (request, response) => {
-  const data = request.query.data;
-  const geoData = `https://maps.googleapis.com/maps/api/geocode/json?address=${data}&key=${process.env.GEOCODE_API_KEY}`;
+let getLocation = (request, response) => {
+  const locationHandler = {
+    query: request.query.data,
+    cacheHit: results => {
+      console.log('got data');
+      response.send(results[0]);
+    },
+    cacheMiss: () => {
+      Location.fetchLocation(request.query.data)
+        .then(results => response.send(results));
+    }
+  };
 
-  return superagent.get(geoData)
-    .then(result => {
-      response.send(new Location(data, result.body.results[0]));
-      console.log(' location returned');
-    })
-
-    .catch(error => handleError(error, response));
+  Location.lookup(locationHandler);
 };
 
 // -------------------------------
@@ -103,7 +149,7 @@ let searchEvents = (request, response) => {
 };
 
 //-------------------API Routes-------------------///
-app.get('/location', searchToLatLong);
+app.get('/location', getLocation);
 app.get('/weather', getWeather);
 app.get('/events', searchEvents);
 
