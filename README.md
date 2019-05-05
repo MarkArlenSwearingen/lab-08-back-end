@@ -80,16 +80,23 @@ Actual time needed to complete:  hours
 Lab 08
 Authors:  Mark Swearingen Chloie Parsons
 ###################
-Number and name of feature: 
+Number and name of feature: Database
 
-Estimate of time needed to complete: 
+Estimate of time needed to complete: 1 hour
 Start time: 
 Finish time: 
 Actual time needed to complete: 
 
 ###################
-Number and name of feature:
-Estimate of time needed to complete: 
+Number and name of feature: Server 
+Estimate of time needed to complete: 2 hours
+Start time: 
+Finish time: 
+Actual time needed to complete:  hours
+
+###################
+Number and name of feature: Heroku Deploy 
+Estimate of time needed to complete: 0:45 hours
 Start time: 
 Finish time: 
 Actual time needed to complete:  hours
