@@ -75,3 +75,21 @@ Start time: 9:10
 Finish time: 
 
 Actual time needed to complete:  hours
+
+###################
+Lab 08
+Authors:  Mark Swearingen Chloie Parsons
+###################
+Number and name of feature: 
+
+Estimate of time needed to complete: 
+Start time: 
+Finish time: 
+Actual time needed to complete: 
+
+###################
+Number and name of feature:
+Estimate of time needed to complete: 
+Start time: 
+Finish time: 
+Actual time needed to complete:  hours
