@@ -1,6 +1,6 @@
 # Project Name
 
-**Author**: Michael Chapman | Mark Swearingen
+**Author**: Mark Swearingen | Chloie Parsons
 **Version**: 1.0.0 (increment the patch/fix version number if you make more commits past your first submission)
 
 ## Overview
@@ -13,10 +13,10 @@ This application is for users to put in and API key and location data in order t
 This application is built using Node and Express. We are using the Google Maps API, Yelp API, Dark Sky API, Event Brite API, Meetups API, and Weather API.
 
 ## Change Log
-04-30-2029 9:04pm - Website is fully scaffolded.
+05-04-2019 5:33pm - Lab 08 brought current to Lab 07 specs.
 
 ## Credits and Collaborations
-Mark Swearingen
+Mark Swearingen and Chloie Parsons
 
 ###################
 Number and name of feature: Scaffold site
